@@ -73,6 +73,32 @@ Mat convertDicom(const Mat &I)
     return ret;
 }
 
+void printHist(Mat &img)
+{
+    Mat hist;
+    int histSize = 255;
+    float range[] = {0, 255};
+    const float *histRange = range;
+
+    calcHist(&img, 1, 0, Mat(), hist, 1, &histSize, &histRange, true, false);
+
+    int hist_w = 400;
+    int hist_h = 400;
+    int bin_w = cvRound((double)hist_w / histSize);
+
+    Mat histImage(hist_w, hist_h, CV_8UC3, Scalar(0, 0, 0));
+    normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+    for (int i = 1; i < histSize; i++)
+    {
+        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
+             Point(bin_w * (i), hist_h - cvRound(hist.at<float>(i))),
+             Scalar(0, 0, 255), 2, 8, 0);
+    }
+    namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE);
+    imshow("calcHist Demo", histImage);
+    waitKey(0);
+}
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent), ui(new Ui::Widget)
 {
@@ -176,8 +202,12 @@ void Widget::enhance()
     switch (ui->enhanceChoose->currentIndex())
     {
     case 0:
+        // printHist(img);
+
         // 直方图均衡化
         equalizeHist(img, img);
+
+        // printHist(img);
         break;
 
     case 1:
@@ -186,7 +216,9 @@ void Widget::enhance()
         Mat kernel = (Mat_<float>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
         filter2D(img, temp, CV_8U, kernel);
         img = img - temp;
+        break;
     }
+
     memorize();
     showImg();
 }
