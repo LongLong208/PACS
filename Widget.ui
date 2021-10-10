@@ -17,13 +17,19 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>120</y>
-     <width>121</width>
-     <height>71</height>
+     <y>50</y>
+     <width>101</width>
+     <height>41</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
    <property name="text">
-    <string>读取</string>
+    <string>读取图象</string>
    </property>
   </widget>
   <widget class="QLabel" name="imageLabel">
