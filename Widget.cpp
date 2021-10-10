@@ -182,8 +182,10 @@ void Widget::enhance()
 
     case 1:
         // 拉普拉斯
-        Mat kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 5, 0, 0, -1, 0);
-        filter2D(img, img, CV_8U, kernel);
+        Mat temp;
+        Mat kernel = (Mat_<float>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
+        filter2D(img, temp, CV_8U, kernel);
+        img = img - temp;
     }
     memorize();
     showImg();
