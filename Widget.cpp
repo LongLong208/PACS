@@ -77,7 +77,15 @@ Widget::Widget(QWidget *parent)
     : QWidget(parent), ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    memo.resize(memoSize);
+    size = first = last = 0;
+    cur = -1;
+    ui->redoBtn->setEnabled(false);
+    ui->undoBtn->setEnabled(false);
     connect(ui->readBtn, &QPushButton::clicked, this, &Widget::readDicom);
+    connect(ui->enhanceBtn, &QPushButton::clicked, this, &Widget::enhance);
+    connect(ui->undoBtn, &QPushButton::clicked, this, &Widget::undo);
+    connect(ui->redoBtn, &QPushButton::clicked, this, &Widget::redo);
 }
 
 Widget::~Widget()
@@ -85,11 +93,69 @@ Widget::~Widget()
     delete ui;
 }
 
+void Widget::undo()
+{
+    cur = (memoSize + cur - 1) % memoSize;
+    img = memo[cur].clone();
+    ui->redoBtn->setEnabled(true);
+    if (cur == first)
+        ui->undoBtn->setEnabled(false);
+    showImg();
+    // qDebug() << cur;
+}
+
+void Widget::redo()
+{
+    cur = (cur + 1) % memoSize;
+    img = memo[cur].clone();
+    ui->undoBtn->setEnabled(true);
+    if ((cur + 1) % memoSize == last)
+        ui->redoBtn->setEnabled(false);
+    showImg();
+    // qDebug() << cur;
+}
+
+void Widget::showImg()
+{
+    QImage qimg(img.data, 512, 512, QImage::Format_Grayscale8);
+    ui->imageLabel->setPixmap(QPixmap::fromImage(qimg));
+}
+
+void Widget::memorize()
+{
+    if ((cur + 1) % memoSize == last)
+    {
+        memo[last] = img.clone();
+        if (cur != -1 && last == first)
+        {
+            first = (first + 1) % memoSize;
+        }
+        cur = last;
+        last = (last + 1) % memoSize;
+    }
+    else
+    {
+        cur = (cur + 1) % memoSize;
+        last = (cur + 1) % memoSize;
+        memo[cur] = img.clone();
+        ui->redoBtn->setEnabled(false);
+    }
+    if (cur != first)
+    {
+        // imshow("aa", memo[0]);
+        ui->undoBtn->setEnabled(true);
+    }
+    // qDebug() << cur;
+}
+
 void Widget::readDicom()
 {
+    memo.clear();
+    cur = -1;
+    first = last = size = 0;
+    ui->redoBtn->setEnabled(false);
+    ui->undoBtn->setEnabled(false);
     QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm)"));
-
-    Mat img;
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     if (fileName == "")
         dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
@@ -101,6 +167,24 @@ void Widget::readDicom()
     // imshow("image", img);
     img = convertDicom(img);
     // imshow("image", img);
-    QImage qimg(img.data, 512, 512, QImage::Format_Grayscale8);
-    ui->imageLabel->setPixmap(QPixmap::fromImage(qimg));
+    memorize();
+    showImg();
+}
+
+void Widget::enhance()
+{
+    switch (ui->enhanceChoose->currentIndex())
+    {
+    case 0:
+        // 直方图均衡化
+        equalizeHist(img, img);
+        break;
+
+    case 1:
+        // 拉普拉斯
+        Mat kernel = (Mat_<float>(3, 3) << 0, -1, 0, 0, 5, 0, 0, -1, 0);
+        filter2D(img, img, CV_8U, kernel);
+    }
+    memorize();
+    showImg();
 }
