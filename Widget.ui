@@ -49,7 +49,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>140</y>
+     <y>110</y>
      <width>101</width>
      <height>41</height>
     </rect>
@@ -69,7 +69,7 @@
     <rect>
      <x>340</x>
      <y>580</y>
-     <width>111</width>
+     <width>101</width>
      <height>41</height>
     </rect>
    </property>
@@ -87,7 +87,7 @@
     <rect>
      <x>550</x>
      <y>580</y>
-     <width>111</width>
+     <width>101</width>
      <height>41</height>
     </rect>
    </property>
@@ -104,7 +104,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>220</y>
+     <y>170</y>
      <width>101</width>
      <height>41</height>
     </rect>
@@ -122,8 +122,8 @@
   <widget class="QComboBox" name="sharpenOpChoose">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>270</y>
+     <x>40</x>
+     <y>220</y>
      <width>121</width>
      <height>26</height>
     </rect>
@@ -148,7 +148,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>330</y>
+     <y>260</y>
      <width>101</width>
      <height>41</height>
     </rect>
@@ -166,8 +166,8 @@
   <widget class="QComboBox" name="blurChoose">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>380</y>
+     <x>40</x>
+     <y>310</y>
      <width>121</width>
      <height>26</height>
     </rect>
@@ -202,7 +202,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>440</y>
+     <y>350</y>
      <width>101</width>
      <height>41</height>
     </rect>
@@ -215,6 +215,63 @@
    </property>
    <property name="text">
     <string>分割</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="openBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>410</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>开运算</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="closeBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>470</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>闭运算</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="exportBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>580</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>导出</string>
    </property>
   </widget>
  </widget>

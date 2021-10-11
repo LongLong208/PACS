@@ -102,16 +102,6 @@ void printHist(Mat &img)
     waitKey(0);
 }
 
-void Widget::setAvailable(bool enabled)
-{
-    ui->enhanceBtn->setEnabled(enabled);
-    557nui ui->sharpenBtn->setEnabled(enabled);
-    ui->sharpenOpChoose->setEnabled(enabled);
-    ui->blurBtn->setEnabled(enabled);
-    ui->blurChoose->setEnabled(enabled);
-    ui->segmentationBtn->setEnabled(enabled);
-}
-
 Widget::Widget(QWidget *parent)
     : QWidget(parent), ui(new Ui::Widget)
 {
@@ -129,11 +119,27 @@ Widget::Widget(QWidget *parent)
     connect(ui->sharpenBtn, &QPushButton::clicked, this, &Widget::sharpen);
     connect(ui->blurBtn, &QPushButton::clicked, this, &Widget::blur);
     connect(ui->segmentationBtn, &QPushButton::clicked, this, &Widget::segmentation);
+    connect(ui->openBtn, &QPushButton::clicked, this, &Widget::img_open);
+    connect(ui->closeBtn, &QPushButton::clicked, this, &Widget::img_close);
+    connect(ui->exportBtn, &QPushButton::clicked, this, &Widget::export_file);
 }
 
 Widget::~Widget()
 {
     delete ui;
+}
+
+void Widget::setAvailable(bool enabled)
+{
+    ui->enhanceBtn->setEnabled(enabled);
+    ui->sharpenBtn->setEnabled(enabled);
+    ui->sharpenOpChoose->setEnabled(enabled);
+    ui->blurBtn->setEnabled(enabled);
+    ui->blurChoose->setEnabled(enabled);
+    ui->segmentationBtn->setEnabled(enabled);
+    ui->openBtn->setEnabled(enabled);
+    ui->closeBtn->setEnabled(enabled);
+    ui->exportBtn->setEnabled(enabled);
 }
 
 // 撤销
@@ -203,7 +209,7 @@ void Widget::readDicom()
     first = last = size = 0;
     ui->redoBtn->setEnabled(false);
     ui->undoBtn->setEnabled(false);
-    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm), 所有文件 (*.*)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm)"));
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     if (fileName == "")
         dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
@@ -295,4 +301,32 @@ void Widget::segmentation()
     filter2D(img, img, CV_8UC1, kernel);
     memorize();
     showImg();
+}
+
+// 开运算
+void Widget::img_open()
+{
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+    erode(img, img, kernel);
+    dilate(img, img, kernel);
+    memorize();
+    showImg();
+}
+
+// 闭运算
+void Widget::img_close()
+{
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+    dilate(img, img, kernel);
+    erode(img, img, kernel);
+    memorize();
+    showImg();
+}
+
+// 导出
+void Widget::export_file()
+{
+    QImage image(img.data, 512, 512, QImage::Format_Grayscale8);
+    QString path = QFileDialog::getSaveFileName(this, tr("导出图片"), QDir::currentPath() + "\\export_img.jpg", tr("图象 (*.png *.jpg)"));
+    image.save(path);
 }

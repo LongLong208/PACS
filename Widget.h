@@ -42,6 +42,9 @@ public slots:
     void sharpen();
     void blur();
     void segmentation();
+    void img_open();
+    void img_close();
+    void export_file();
 
 private:
     Ui::Widget *ui;
