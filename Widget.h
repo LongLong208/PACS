@@ -26,6 +26,7 @@ protected:
     int cur, first, last, size;
     cv::Mat img;
     void showImg();
+    void setAvailable(bool);
 
 public:
     Widget(QWidget *parent = nullptr);
@@ -38,6 +39,9 @@ public slots:
     void enhance();
     void undo();
     void redo();
+    void sharpen();
+    void blur();
+    void segmentation();
 
 private:
     Ui::Widget *ui;

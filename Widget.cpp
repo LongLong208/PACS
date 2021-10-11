@@ -21,6 +21,7 @@
 using namespace cv;
 using namespace std;
 
+// dicom 读取
 void dicomread(string inputFilename, Mat &img, vtkSmartPointer<vtkDICOMImageReader> &reader)
 {
     img.create(512, 512, CV_32SC1);
@@ -54,6 +55,7 @@ void dicomread(string inputFilename, Mat &img, vtkSmartPointer<vtkDICOMImageRead
     }
 }
 
+// 灰度范围修正
 Mat convertDicom(const Mat &I)
 {
     Mat ret = I;
@@ -73,6 +75,7 @@ Mat convertDicom(const Mat &I)
     return ret;
 }
 
+// 显示直方图
 void printHist(Mat &img)
 {
     Mat hist;
@@ -99,6 +102,16 @@ void printHist(Mat &img)
     waitKey(0);
 }
 
+void Widget::setAvailable(bool enabled)
+{
+    ui->enhanceBtn->setEnabled(enabled);
+    557nui ui->sharpenBtn->setEnabled(enabled);
+    ui->sharpenOpChoose->setEnabled(enabled);
+    ui->blurBtn->setEnabled(enabled);
+    ui->blurChoose->setEnabled(enabled);
+    ui->segmentationBtn->setEnabled(enabled);
+}
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent), ui(new Ui::Widget)
 {
@@ -108,10 +121,14 @@ Widget::Widget(QWidget *parent)
     cur = -1;
     ui->redoBtn->setEnabled(false);
     ui->undoBtn->setEnabled(false);
+    setAvailable(false);
     connect(ui->readBtn, &QPushButton::clicked, this, &Widget::readDicom);
-    connect(ui->enhanceBtn, &QPushButton::clicked, this, &Widget::enhance);
     connect(ui->undoBtn, &QPushButton::clicked, this, &Widget::undo);
     connect(ui->redoBtn, &QPushButton::clicked, this, &Widget::redo);
+    connect(ui->enhanceBtn, &QPushButton::clicked, this, &Widget::enhance);
+    connect(ui->sharpenBtn, &QPushButton::clicked, this, &Widget::sharpen);
+    connect(ui->blurBtn, &QPushButton::clicked, this, &Widget::blur);
+    connect(ui->segmentationBtn, &QPushButton::clicked, this, &Widget::segmentation);
 }
 
 Widget::~Widget()
@@ -119,6 +136,7 @@ Widget::~Widget()
     delete ui;
 }
 
+// 撤销
 void Widget::undo()
 {
     cur = (memoSize + cur - 1) % memoSize;
@@ -130,6 +148,7 @@ void Widget::undo()
     // qDebug() << cur;
 }
 
+// 重做
 void Widget::redo()
 {
     cur = (cur + 1) % memoSize;
@@ -141,12 +160,14 @@ void Widget::redo()
     // qDebug() << cur;
 }
 
+// 显示当前图象
 void Widget::showImg()
 {
     QImage qimg(img.data, 512, 512, QImage::Format_Grayscale8);
     ui->imageLabel->setPixmap(QPixmap::fromImage(qimg));
 }
 
+// 记录历史图象
 void Widget::memorize()
 {
     if ((cur + 1) % memoSize == last)
@@ -174,6 +195,7 @@ void Widget::memorize()
     // qDebug() << cur;
 }
 
+// 读取图象
 void Widget::readDicom()
 {
     memo.clear();
@@ -181,44 +203,96 @@ void Widget::readDicom()
     first = last = size = 0;
     ui->redoBtn->setEnabled(false);
     ui->undoBtn->setEnabled(false);
-    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm), 所有文件 (*.*)"));
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     if (fileName == "")
         dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
     else
         dicomread(fileName.toStdString(), img, reader);
     flip(img, img, 0);
-    // cout << img.channels() << "  " << img.size() << endl;
-    // img.convertTo(img, CV_32F, 1.0 / 255, 0);
-    // imshow("image", img);
+
+    // img = imread(fileName.toStdString());
+    // cvtColor(img, img, CV_RGB2GRAY);
+
     img = convertDicom(img);
-    // imshow("image", img);
+    memorize();
+    showImg();
+
+    setAvailable(true);
+}
+
+// 图象增强
+void Widget::enhance()
+{
+    // printHist(img);
+    // 直方图均衡化
+    equalizeHist(img, img);
+    // printHist(img);
     memorize();
     showImg();
 }
 
-void Widget::enhance()
+// 锐化
+void Widget::sharpen()
 {
-    switch (ui->enhanceChoose->currentIndex())
+    // 拉普拉斯
+    Mat temp;
+    Mat kernel;
+
+    switch (ui->sharpenOpChoose->currentIndex())
     {
     case 0:
-        // printHist(img);
-
-        // 直方图均衡化
-        equalizeHist(img, img);
-
-        // printHist(img);
+        kernel = (Mat_<float>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
         break;
-
     case 1:
-        // 拉普拉斯
-        Mat temp;
-        Mat kernel = (Mat_<float>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
-        filter2D(img, temp, CV_8U, kernel);
-        img = img - temp;
+        kernel = (Mat_<float>(5, 5) << 0, 0, 1, 0, 0, 0, 1, 2, 1, 0, 1, 2, -16, 2, 1, 0, 1, 2, 1, 0, 0, 0, 1, 0, 0);
+        break;
+    default:
+        kernel = (Mat_<float>(3, 3) << 0, 0, 0, 0, 1, 0, 0, 0, 0);
         break;
     }
 
+    filter2D(img, temp, CV_8UC1, kernel);
+    img = img - temp;
+
+    memorize();
+    showImg();
+}
+
+// 模糊、滤波
+void Widget::blur()
+{
+    switch (ui->blurChoose->currentIndex())
+    {
+    case 0:
+        // 3x3 均值滤波
+        cv::blur(img, img, Size(3, 3));
+        break;
+    case 1:
+        // 5x5 均值滤波
+        cv::blur(img, img, Size(5, 5));
+        break;
+    case 2:
+        // 3x3 中值滤波
+        medianBlur(img, img, 3);
+        break;
+    case 3:
+        // 5x5 中值滤波
+        medianBlur(img, img, 5);
+        break;
+    default:
+        break;
+    }
+
+    memorize();
+    showImg();
+}
+
+// 图象分割
+void Widget::segmentation()
+{
+    Mat kernel = (Mat_<float>(3, 3) << -1, -1, -1, -1, 8, -1, -1, -1, -1);
+    filter2D(img, img, CV_8UC1, kernel);
     memorize();
     showImg();
 }

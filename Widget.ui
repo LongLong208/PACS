@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>796</width>
-    <height>653</height>
+    <width>837</width>
+    <height>654</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,7 +35,7 @@
   <widget class="QLabel" name="imageLabel">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>240</x>
      <y>30</y>
      <width>512</width>
      <height>512</height>
@@ -64,35 +64,10 @@
     <string>图象增强</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="enhanceChoose">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>200</y>
-     <width>121</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <item>
-    <property name="text">
-     <string>直方图均衡</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>拉普拉斯</string>
-    </property>
-   </item>
-  </widget>
   <widget class="QPushButton" name="undoBtn">
    <property name="geometry">
     <rect>
-     <x>350</x>
+     <x>340</x>
      <y>580</y>
      <width>111</width>
      <height>41</height>
@@ -123,6 +98,123 @@
    </property>
    <property name="text">
     <string>重做▶</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="sharpenBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>220</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>锐化</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="sharpenOpChoose">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>270</y>
+     <width>121</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <item>
+    <property name="text">
+     <string>3x3 拉普拉斯</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>5x5 拉普拉斯</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QPushButton" name="blurBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>330</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>模糊</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="blurChoose">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>380</y>
+     <width>121</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <item>
+    <property name="text">
+     <string>3x3 均值滤波</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>5x5 均值滤波</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>3x3 中值滤波</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>5x5 中值滤波</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QPushButton" name="segmentationBtn">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>440</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>分割</string>
    </property>
   </widget>
  </widget>
