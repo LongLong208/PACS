@@ -17,7 +17,6 @@
 #include <vtkRenderer.h>
 #include <vtkImageData.h>
 #include <vtkCoordinate.h>
-
 using namespace cv;
 using namespace std;
 
@@ -209,10 +208,12 @@ void Widget::readDicom()
     first = last = size = 0;
     ui->redoBtn->setEnabled(false);
     ui->undoBtn->setEnabled(false);
-    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), QDir::currentPath(), tr("dicom文件 (*.dcm)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), "C:\\Users\\lenovo\\Downloads\\Head\\", tr("dicom文件 (*.dcm)"));
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     if (fileName == "")
-        dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
+    {
+        // dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
+    }
     else
         dicomread(fileName.toStdString(), img, reader);
     flip(img, img, 0);
@@ -271,18 +272,21 @@ void Widget::blur()
     switch (ui->blurChoose->currentIndex())
     {
     case 0:
+        // 高斯模糊
+        cv::GaussianBlur(img, img, Size(5, 5), 0.8, 0.8);
+    case 1:
         // 3x3 均值滤波
         cv::blur(img, img, Size(3, 3));
         break;
-    case 1:
+    case 2:
         // 5x5 均值滤波
         cv::blur(img, img, Size(5, 5));
         break;
-    case 2:
+    case 3:
         // 3x3 中值滤波
         medianBlur(img, img, 3);
         break;
-    case 3:
+    case 4:
         // 5x5 中值滤波
         medianBlur(img, img, 5);
         break;
@@ -327,6 +331,6 @@ void Widget::img_close()
 void Widget::export_file()
 {
     QImage image(img.data, 512, 512, QImage::Format_Grayscale8);
-    QString path = QFileDialog::getSaveFileName(this, tr("导出图片"), QDir::currentPath() + "\\export_img.jpg", tr("图象 (*.png *.jpg)"));
+    QString path = QFileDialog::getSaveFileName(this, tr("导出图片"), QDir::currentPath() + "\\untitled.jpg", tr("图象 (*.png *.jpg)"));
     image.save(path);
 }

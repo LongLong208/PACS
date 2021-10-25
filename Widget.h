@@ -21,7 +21,7 @@ class Widget : public QWidget
     Q_OBJECT
 
 protected:
-    const int memoSize = 10;
+    const int memoSize = 100;
     vector<cv::Mat> memo;
     int cur, first, last, size;
     cv::Mat img;

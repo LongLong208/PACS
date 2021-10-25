@@ -57,11 +57,11 @@
    <property name="font">
     <font>
      <family>Arial</family>
-     <pointsize>16</pointsize>
+     <pointsize>12</pointsize>
     </font>
    </property>
    <property name="text">
-    <string>图象增强</string>
+    <string>直方图均衡化</string>
    </property>
   </widget>
   <widget class="QPushButton" name="undoBtn">
@@ -177,6 +177,11 @@
      <pointsize>12</pointsize>
     </font>
    </property>
+   <item>
+    <property name="text">
+     <string>高斯模糊</string>
+    </property>
+   </item>
    <item>
     <property name="text">
      <string>3x3 均值滤波</string>
