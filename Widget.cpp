@@ -324,15 +324,7 @@ void Widget::blur()
     showImg();
 }
 
-/**
- * @brief 区域生长算法，输入图像应为灰度图像
- * @param srcImage 区域生长的源图像
- * @param pt 区域生长点
- * @param ch1Thres 通道的生长限制阈值，临近像素符合±chxThres范围内才能进行生长
- * @param ch1LowerBind 通道的最小值阈值
- * @param ch1UpperBind 通道的最大值阈值，在这个范围外即使临近像素符合±chxThres也不能生长
- * @return 生成的区域图像（二值类型）
- */
+// 区域生长
 Mat RegionGrow(Mat srcImage, Point pt, int ch1Thres, int ch1LowerBind = 0, int ch1UpperBind = 255)
 {
     Point pToGrowing;                                     //待生长点位置
@@ -392,11 +384,6 @@ void Widget::edgeDetect()
 // 分水岭分割
 void Widget::segmentation()
 {
-    // Mat kernel = (Mat_<float>(3, 3) << -1, -1, -1, -1, 8, -1, -1, -1, -1);
-    // filter2D(img, img, CV_8UC1, kernel);
-
-    // img = RegionGrow(img, Point(255, 255), 2);
-
     Mat temp;
     cvtColor(img, temp, COLOR_GRAY2RGB);
 
