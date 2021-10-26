@@ -3,6 +3,8 @@
 
 #include <QtDebug>
 #include <QFileDialog>
+#include <QMouseEvent>
+#include <QMessageBox>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -118,9 +120,18 @@ Widget::Widget(QWidget *parent)
     connect(ui->sharpenBtn, &QPushButton::clicked, this, &Widget::sharpen);
     connect(ui->blurBtn, &QPushButton::clicked, this, &Widget::blur);
     connect(ui->segmentationBtn, &QPushButton::clicked, this, &Widget::segmentation);
+    connect(ui->segmentationBtn_2, &QPushButton::clicked, this, &Widget::segmentation2);
     connect(ui->openBtn, &QPushButton::clicked, this, &Widget::img_open);
     connect(ui->closeBtn, &QPushButton::clicked, this, &Widget::img_close);
     connect(ui->exportBtn, &QPushButton::clicked, this, &Widget::export_file);
+    connect(ui->edgeDetectBtn, &QPushButton::clicked, this, &Widget::edgeDetect);
+    connect(ui->threshold1Bar, &QSlider::valueChanged, this, &Widget::bar1Changed);
+    connect(ui->threshold2Bar, &QSlider::valueChanged, this, &Widget::bar2Changed);
+    connect(ui->regionGrowBar, &QSlider::valueChanged, this, &Widget::regionGrowBarChanged);
+    connect(ui->compareBtn, &QPushButton::pressed, this, &Widget::compare);
+
+    void (Widget::*ptr)(void) = &Widget::showImg;
+    connect(ui->compareBtn, &QPushButton::released, this, ptr);
 }
 
 Widget::~Widget()
@@ -136,9 +147,15 @@ void Widget::setAvailable(bool enabled)
     ui->blurBtn->setEnabled(enabled);
     ui->blurChoose->setEnabled(enabled);
     ui->segmentationBtn->setEnabled(enabled);
+    ui->segmentationBtn_2->setEnabled(enabled);
     ui->openBtn->setEnabled(enabled);
     ui->closeBtn->setEnabled(enabled);
     ui->exportBtn->setEnabled(enabled);
+    ui->threshold1Bar->setEnabled(enabled);
+    ui->threshold2Bar->setEnabled(enabled);
+    ui->edgeDetectBtn->setEnabled(enabled);
+    ui->regionGrowBar->setEnabled(enabled);
+    ui->compareBtn->setEnabled(enabled);
 }
 
 // 撤销
@@ -169,6 +186,12 @@ void Widget::redo()
 void Widget::showImg()
 {
     QImage qimg(img.data, 512, 512, QImage::Format_Grayscale8);
+    ui->imageLabel->setPixmap(QPixmap::fromImage(qimg));
+}
+
+void Widget::showImg(cv::Mat &image)
+{
+    QImage qimg(image.data, 512, 512, QImage::Format_Grayscale8);
     ui->imageLabel->setPixmap(QPixmap::fromImage(qimg));
 }
 
@@ -203,25 +226,28 @@ void Widget::memorize()
 // 读取图象
 void Widget::readDicom()
 {
-    memo.clear();
-    cur = -1;
-    first = last = size = 0;
-    ui->redoBtn->setEnabled(false);
-    ui->undoBtn->setEnabled(false);
     QString fileName = QFileDialog::getOpenFileName(this, tr("打开dicom文件"), "C:\\Users\\lenovo\\Downloads\\Head\\", tr("dicom文件 (*.dcm)"));
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     if (fileName == "")
     {
         // dicomread("C:\\Users\\lenovo\\Downloads\\dcms\\vhf.1643.dcm", img, reader);
+        return;
     }
-    else
-        dicomread(fileName.toStdString(), img, reader);
+    dicomread(fileName.toStdString(), img, reader);
+    memo.clear();
+    cur = -1;
+    first = last = size = 0;
+    ui->redoBtn->setEnabled(false);
+    ui->undoBtn->setEnabled(false);
+
     flip(img, img, 0);
 
     // img = imread(fileName.toStdString());
     // cvtColor(img, img, CV_RGB2GRAY);
 
     img = convertDicom(img);
+
+    origin = img.clone();
     memorize();
     showImg();
 
@@ -298,11 +324,116 @@ void Widget::blur()
     showImg();
 }
 
-// 图象分割
+/**
+ * @brief 区域生长算法，输入图像应为灰度图像
+ * @param srcImage 区域生长的源图像
+ * @param pt 区域生长点
+ * @param ch1Thres 通道的生长限制阈值，临近像素符合±chxThres范围内才能进行生长
+ * @param ch1LowerBind 通道的最小值阈值
+ * @param ch1UpperBind 通道的最大值阈值，在这个范围外即使临近像素符合±chxThres也不能生长
+ * @return 生成的区域图像（二值类型）
+ */
+Mat RegionGrow(Mat srcImage, Point pt, int ch1Thres, int ch1LowerBind = 0, int ch1UpperBind = 255)
+{
+    Point pToGrowing;                                     //待生长点位置
+    int pGrowValue = 0;                                   //待生长点灰度值
+    Scalar pSrcValue = 0;                                 //生长起点灰度值
+    Scalar pCurValue = 0;                                 //当前生长点灰度值
+    Mat growImage = Mat::zeros(srcImage.size(), CV_8UC1); //创建一个空白区域，填充为黑色
+    //生长方向顺序数据
+    int DIR[8][2] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
+    vector<Point> growPtVector;                 //生长点栈
+    growPtVector.push_back(pt);                 //将生长点压入栈中
+    growImage.at<uchar>(pt.y, pt.x) = 255;      //标记生长点
+    pSrcValue = srcImage.at<uchar>(pt.y, pt.x); //记录生长点的灰度值
+
+    while (!growPtVector.empty()) //生长栈不为空则生长
+    {
+        pt = growPtVector.back(); //取出一个生长点
+        growPtVector.pop_back();
+
+        //分别对八个方向上的点进行生长
+        for (int i = 0; i < 8; ++i)
+        {
+            pToGrowing.x = pt.x + DIR[i][0];
+            pToGrowing.y = pt.y + DIR[i][1];
+            //检查是否是边缘点
+            if (pToGrowing.x < 0 || pToGrowing.y < 0 ||
+                pToGrowing.x > (srcImage.cols - 1) || (pToGrowing.y > srcImage.rows - 1))
+                continue;
+
+            pGrowValue = growImage.at<uchar>(pToGrowing.y, pToGrowing.x); //当前待生长点的灰度值
+            pSrcValue = srcImage.at<uchar>(pt.y, pt.x);
+            if (pGrowValue == 0) //如果标记点还没有被生长
+            {
+                pCurValue = srcImage.at<uchar>(pToGrowing.y, pToGrowing.x);
+                if (pCurValue[0] <= ch1UpperBind && pCurValue[0] >= ch1LowerBind)
+                {
+                    if (abs(pSrcValue[0] - pCurValue[0]) < ch1Thres) //在阈值范围内则生长
+                    {
+                        growImage.at<uchar>(pToGrowing.y, pToGrowing.x) = 255; //标记为白色
+                        growPtVector.push_back(pToGrowing);                    //将下一个生长点压入栈中
+                    }
+                }
+            }
+        }
+    }
+    return growImage.clone();
+}
+
+// 边缘检测
+void Widget::edgeDetect()
+{
+    Canny(img, img, ui->threshold1Bar->value(), ui->threshold2Bar->value());
+    memorize();
+    showImg();
+}
+
+// 分水岭分割
 void Widget::segmentation()
 {
-    Mat kernel = (Mat_<float>(3, 3) << -1, -1, -1, -1, 8, -1, -1, -1, -1);
-    filter2D(img, img, CV_8UC1, kernel);
+    // Mat kernel = (Mat_<float>(3, 3) << -1, -1, -1, -1, 8, -1, -1, -1, -1);
+    // filter2D(img, img, CV_8UC1, kernel);
+
+    // img = RegionGrow(img, Point(255, 255), 2);
+
+    Mat temp;
+    cvtColor(img, temp, COLOR_GRAY2RGB);
+
+    //查找轮廓
+    vector<vector<Point>> contours;
+    vector<Vec4i> hierarchy;
+    findContours(img, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+    Mat imageContours = Mat::zeros(img.size(), CV_8UC1); //轮廓
+    Mat marks(img.size(), CV_32S);                       //Opencv分水岭第二个矩阵参数
+    marks = Scalar::all(0);
+    int index = 0;
+    int compCount = 0;
+    for (; index >= 0; index = hierarchy[index][0], compCount++)
+    {
+        //对marks进行标记，对不同区域的轮廓进行编号，相当于设置注水点，有多少轮廓，就有多少注水点
+        drawContours(marks, contours, index, Scalar::all(compCount + 1), 1, 8, hierarchy);
+        drawContours(imageContours, contours, index, Scalar(255), 1, 8, hierarchy);
+    }
+
+    watershed(temp, marks);
+
+    marks.convertTo(img, CV_8UC1);
+
+    memorize();
+    showImg();
+}
+
+// 区域生长
+void Widget::segmentation2()
+{
+    QRect posRect = ui->imageLabel->geometry();
+    if (xpos < posRect.x() || xpos > posRect.x() + posRect.width() || ypos < posRect.y() || ypos > posRect.y() + posRect.height())
+    {
+        QMessageBox::warning(this, "错误", "请先选择种子点！");
+        return;
+    }
+    img = RegionGrow(img, Point(xpos - posRect.x(), ypos - posRect.y()), ui->regionGrowBar->value());
     memorize();
     showImg();
 }
@@ -333,4 +464,30 @@ void Widget::export_file()
     QImage image(img.data, 512, 512, QImage::Format_Grayscale8);
     QString path = QFileDialog::getSaveFileName(this, tr("导出图片"), QDir::currentPath() + "\\untitled.jpg", tr("图象 (*.png *.jpg)"));
     image.save(path);
+}
+
+void Widget::bar1Changed()
+{
+    ui->label->setText(QString::number(ui->threshold1Bar->value()));
+}
+
+void Widget::bar2Changed()
+{
+    ui->label_2->setText(QString::number(ui->threshold2Bar->value()));
+}
+
+void Widget::mousePressEvent(QMouseEvent *event)
+{
+    xpos = event->x();
+    ypos = event->y();
+}
+
+void Widget::regionGrowBarChanged()
+{
+    ui->label_3->setText(QString::number(ui->regionGrowBar->value()));
+}
+
+void Widget::compare()
+{
+    showImg(origin);
 }
