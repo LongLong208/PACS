@@ -465,8 +465,17 @@ void Widget::bar2Changed()
 
 void Widget::mousePressEvent(QMouseEvent *event)
 {
-    xpos = event->x();
-    ypos = event->y();
+    if (event->button() == Qt::LeftButton)
+    {
+
+        QRect posRect = ui->imageLabel->geometry();
+        if (event->x() >= posRect.x() && event->x() <= posRect.x() + posRect.width() && event->y() >= posRect.y() && event->y() <= posRect.y() + posRect.height())
+        {
+            QMessageBox::information(this, "提示", "种子点选取成功！");
+            xpos = event->x();
+            ypos = event->y();
+        }
+    }
 }
 
 void Widget::regionGrowBarChanged()
